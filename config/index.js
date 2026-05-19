@@ -1,10 +1,28 @@
 require('dotenv').config();
 
+const parseDBUrl = (url) => {
+  if (!url) return null;
+  try {
+    const parsed = new URL(url);
+    return {
+      host: parsed.hostname,
+      port: parsed.port,
+      user: parsed.username,
+      password: parsed.password,
+      database: parsed.pathname.replace('/', '')
+    };
+  } catch (e) {
+    return null;
+  }
+};
+
+const dbFromUrl = parseDBUrl(process.env.MYSQL_URL || process.env.DATABASE_URL);
+
 module.exports = {
   port: process.env.PORT || 3000,
   nodeEnv: process.env.NODE_ENV || 'development',
 
-  db: {
+  db: dbFromUrl || {
     host: process.env.DB_HOST || 'localhost',
     port: process.env.DB_PORT || 3306,
     user: process.env.DB_USER || 'root',
