@@ -99,7 +99,8 @@ app.get('/api/init-db', async (req, res) => {
     res.status(500).json({
       success: false,
       message: '数据库初始化失败',
-      error: error.message
+      error: error.message,
+      stack: error.stack
     });
   }
 });
