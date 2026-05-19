@@ -3,6 +3,7 @@ const cors = require('cors');
 const path = require('path');
 const fs = require('fs');
 const config = require('./config');
+const { query, getConnection } = require('./config/database');
 const { errorHandler, notFoundHandler } = require('./middleware/errorHandler');
 
 const authRoutes = require('./routes/auth');
@@ -35,6 +36,46 @@ app.get('/health', (req, res) => {
     message: '服务器运行正常',
     timestamp: new Date().toISOString()
   });
+});
+
+app.get('/api/init-db', async (req, res) => {
+  try {
+    const schemaPath = path.join(__dirname, './database/schema.sql');
+    const initDataPath = path.join(__dirname, './database/init_data.sql');
+    
+    const schemaSql = fs.readFileSync(schemaPath, 'utf8');
+    const initDataSql = fs.readFileSync(initDataPath, 'utf8');
+    
+    const connection = await getConnection();
+    
+    const statements = schemaSql.split(';').filter(s => s.trim());
+    for (const stmt of statements) {
+      if (stmt.trim()) {
+        await connection.execute(stmt);
+      }
+    }
+    
+    const initStatements = initDataSql.split(';').filter(s => s.trim());
+    for (const stmt of initStatements) {
+      if (stmt.trim()) {
+        await connection.execute(stmt);
+      }
+    }
+    
+    connection.release();
+    
+    res.json({
+      success: true,
+      message: '数据库初始化完成'
+    });
+  } catch (error) {
+    console.error('数据库初始化失败:', error);
+    res.status(500).json({
+      success: false,
+      message: '数据库初始化失败',
+      error: error.message
+    });
+  }
 });
 
 app.use('/api/auth', authRoutes);
