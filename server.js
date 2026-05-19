@@ -30,12 +30,31 @@ if (!fs.existsSync(uploadPath)) {
 }
 app.use('/uploads', express.static(uploadPath));
 
-app.get('/health', (req, res) => {
-  res.json({
-    success: true,
-    message: '服务器运行正常',
-    timestamp: new Date().toISOString()
-  });
+app.get('/health', async (req, res) => {
+  try {
+    await query('SELECT 1');
+    res.json({
+      success: true,
+      message: '服务器和数据库连接正常',
+      timestamp: new Date().toISOString(),
+      dbConfig: {
+        host: config.db.host,
+        port: config.db.port,
+        database: config.db.database
+      }
+    });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      message: '数据库连接失败',
+      error: error.message,
+      dbConfig: {
+        host: config.db.host,
+        port: config.db.port,
+        database: config.db.database
+      }
+    });
+  }
 });
 
 app.get('/api/init-db', async (req, res) => {
