@@ -1,8 +1,4 @@
 -- 保险投保小程序数据库表结构
--- 创建数据库
-CREATE DATABASE IF NOT EXISTS insurance_db DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
-
-USE insurance_db;
 
 -- 用户表
 CREATE TABLE IF NOT EXISTS `users` (

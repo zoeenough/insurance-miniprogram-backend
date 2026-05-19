@@ -40,25 +40,51 @@ app.get('/health', (req, res) => {
 
 app.get('/api/init-db', async (req, res) => {
   try {
+    console.log('开始初始化数据库...');
+    console.log('数据库配置:', {
+      host: config.db.host,
+      port: config.db.port,
+      user: config.db.user,
+      database: config.db.database
+    });
+    
     const schemaPath = path.join(__dirname, './database/schema.sql');
     const initDataPath = path.join(__dirname, './database/init_data.sql');
     
-    const schemaSql = fs.readFileSync(schemaPath, 'utf8');
-    const initDataSql = fs.readFileSync(initDataPath, 'utf8');
+    let schemaSql = fs.readFileSync(schemaPath, 'utf8');
+    let initDataSql = fs.readFileSync(initDataPath, 'utf8');
+    
+    // 移除注释
+    schemaSql = schemaSql.replace(/--.*$/gm, '').replace(/\/\*[\s\S]*?\*\//g, '');
+    initDataSql = initDataSql.replace(/--.*$/gm, '').replace(/\/\*[\s\S]*?\*\//g, '');
     
     const connection = await getConnection();
     
+    console.log('执行schema...');
     const statements = schemaSql.split(';').filter(s => s.trim());
-    for (const stmt of statements) {
-      if (stmt.trim()) {
-        await connection.execute(stmt);
+    for (let i = 0; i < statements.length; i++) {
+      const stmt = statements[i].trim();
+      if (stmt && !stmt.startsWith('--')) {
+        try {
+          await connection.execute(stmt);
+          console.log(`执行成功 (${i + 1}/${statements.length})`);
+        } catch (e) {
+          console.log(`跳过语句 (可能已存在): ${e.message}`);
+        }
       }
     }
     
+    console.log('执行初始数据...');
     const initStatements = initDataSql.split(';').filter(s => s.trim());
-    for (const stmt of initStatements) {
-      if (stmt.trim()) {
-        await connection.execute(stmt);
+    for (let i = 0; i < initStatements.length; i++) {
+      const stmt = initStatements[i].trim();
+      if (stmt && !stmt.startsWith('--')) {
+        try {
+          await connection.execute(stmt);
+          console.log(`初始数据执行成功 (${i + 1}/${initStatements.length})`);
+        } catch (e) {
+          console.log(`跳过初始数据: ${e.message}`);
+        }
       }
     }
     
